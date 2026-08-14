@@ -8,7 +8,7 @@ seconds.
 B = log₂(N − 1) × max(Sc − Si, 0) / t        N = 25,  log₂(24) = 4.585 bits/selection
 ```
 
-`Sc` is correct selections, `Si` incorrect, `t` elapsed seconds.
+<img width="429" height="391" alt="IMG_6291" src="https://github.com/user-attachments/assets/053161f1-08bb-4205-8c92-37f54ca4ec6a" />
 
 ## Overview
 
