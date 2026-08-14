@@ -1,0 +1,227 @@
+/*
+ * GRID PULSE - the 5x5 target grid.
+ *
+ * Identical geometry and visual language in both input modes: in Mode A this mirrors
+ * the physical keypad 1:1, so a cell/pixel mapping bug on the device shows up as an
+ * obvious mismatch between the board and the screen rather than as a mysteriously
+ * low score.
+ *
+ * Performance discipline: only `transform`, `opacity`, `box-shadow` and `background`
+ * change at play time, and the state machine is driven by a single data attribute per
+ * cell. Nothing here triggers layout during a run.
+ */
+
+.screen--game {
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  padding: clamp(8px, 1.2vmin, 16px);
+  gap: clamp(5px, 0.9vmin, 10px);
+}
+
+/* The playfield edge length, used by the game grid, the time bar and the calibration
+   grid, so all three are exactly the same size and line up with each other.
+
+   The height term is the point. Sizing the grid from vh alone ignores the HUD and
+   the sparkline above and below it, so on any window shorter than the arithmetic
+   assumed, a square grid grows straight through them. Subtracting the chrome makes
+   overlap structurally impossible instead of a matter of the constants happening to
+   work out. The 780px cap keeps it from becoming absurd on a tall display.
+
+   On :root rather than on .screen--game because calibration needs the same value, and
+   a second copy of this arithmetic would drift from this one the first time either was
+   touched. The `100%` term resolves against whichever element uses it. */
+:root {
+  --playfield: min(100%, 780px, calc(100vh - 272px));
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: clamp(6px, 1.1vmin, 14px);
+  /* Square, and as large as the available space allows. A big target field is worth
+     real bit rate: it shortens the visual search and lets the eye work peripherally. */
+  width: var(--playfield);
+  aspect-ratio: 1 / 1;
+  will-change: transform;
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: #0a0e1c;
+  border: 1px solid #182242;
+  font-family: var(--font-num);
+  font-weight: 800;
+  font-size: clamp(15px, 3.4vmin, 40px);
+  color: #33406e;
+  letter-spacing: 0.02em;
+  /* transform and opacity only: these stay on the compositor. */
+  transform: translateZ(0);
+  transition: color 90ms linear, background 90ms linear, box-shadow 90ms linear;
+}
+
+/* The lit target. White core plus a coloured halo - luminance carries the signal,
+   so it reads for any colour vision. */
+.cell[data-state="target"] {
+  background: linear-gradient(180deg, #ffffff, #bfefff);
+  color: #041018;
+  border-color: #ffffff;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 28px 6px rgba(35, 227, 255, 0.85),
+    0 0 70px 18px rgba(35, 227, 255, 0.35);
+  animation: target-in 130ms var(--ease-snap);
+  z-index: 2;
+}
+
+@keyframes target-in {
+  from { transform: scale(0.88); }
+  to   { transform: scale(1); }
+}
+
+/* Repeat target: the previous target was this same cell, so it went dark and came
+   back. The extra ring makes "flash, relight" unmistakable rather than looking like
+   nothing happened. */
+.cell[data-state="target"][data-repeat="1"]::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius);
+  border: 2px solid var(--magenta);
+  animation: repeat-ring 420ms var(--ease-out);
+  pointer-events: none;
+}
+@keyframes repeat-ring {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.16); }
+}
+
+/* Idle cells in Mode A carry no letter; in Mode B they carry their key label. */
+.cell__label { position: relative; z-index: 1; }
+
+.cell__pixel {
+  position: absolute;
+  right: 5px;
+  bottom: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #2b3558;
+  display: none;
+}
+body[data-diagnostics="1"] .cell__pixel { display: block; }
+
+/* Cells excluded by the hardware self-test are visibly dead and never targeted. */
+.cell[data-health="dead"] {
+  opacity: 0.25;
+  background: repeating-linear-gradient(
+    45deg, #0a0e1c, #0a0e1c 5px, #131a30 5px, #131a30 10px
+  );
+  color: #232c4a;
+}
+
+.timebar {
+  width: var(--playfield);
+  height: 4px;
+  background: #131a30;
+  border-radius: 100px;
+  overflow: hidden;
+  flex: none;
+}
+.timebar__fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  transform-origin: left center;
+  /* Driven by scaleX from the render loop - no layout, no reflow. */
+  will-change: transform;
+}
+.timebar__fill[data-urgent="1"] {
+  background: linear-gradient(90deg, var(--amber), var(--magenta));
+}
+
+/* --- overlays ------------------------------------------------------------- */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(5, 6, 13, 0.86);
+  backdrop-filter: blur(6px);
+  border-radius: var(--radius);
+  z-index: 10;
+  text-align: center;
+  padding: 20px;
+}
+.overlay[hidden] { display: none; }
+
+.countdown__number {
+  font-family: var(--font-num);
+  font-size: clamp(80px, 22vmin, 220px);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text);
+  text-shadow: 0 0 50px rgba(35, 227, 255, 0.8);
+}
+.countdown__hint {
+  font-size: 13px; letter-spacing: 0.3em; color: var(--text-faint); font-weight: 700;
+}
+
+.overlay__title {
+  font-size: clamp(28px, 6vmin, 54px); font-weight: 900; letter-spacing: 0.12em;
+  color: var(--amber);
+}
+.overlay__body {
+  max-width: 46ch; font-size: 13.5px; line-height: 1.6; color: var(--text-dim);
+}
+
+.practice-banner {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding: 7px;
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.34em;
+  color: #1b1200;
+  background: var(--amber);
+  z-index: 30;
+}
+.practice-banner[hidden] { display: none; }
+
+/* Give the banner its own room instead of letting it sit on top of the screen.
+ *
+ * It is fixed to the bottom edge, which put it straight over the sparkline and the
+ * ABORT button - and ABORT being under an overlay is the worst of the two, since it
+ * is the way out of a run.
+ *
+ * Both halves are needed. The padding clears the space; the --playfield override
+ * shrinks the grid by the same amount, because the grid is sized from the viewport
+ * rather than from its container and would otherwise grow straight back into the
+ * space the padding just freed. Scoped with :has() so it applies only while the
+ * banner is actually showing - a scored run gives the grid every pixel back. */
+.screen--game:has(.practice-banner:not([hidden])) {
+  --banner-h: 32px;
+  padding-bottom: calc(clamp(8px, 1.2vmin, 16px) + var(--banner-h));
+  --playfield: min(100%, 780px, calc(100vh - 272px - 32px));
+}

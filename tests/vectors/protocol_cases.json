@@ -1,0 +1,324 @@
+{
+  "spec_version": "1.0.0",
+  "protocol_version": 1,
+  "max_line_bytes": 320,
+  "cases": [
+    {
+      "name": "ping",
+      "line": "CMD PING BC9F",
+      "error": "ok",
+      "command": {
+        "name": "PING"
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "proto",
+      "line": "CMD PROTO 24D4",
+      "error": "ok",
+      "command": {
+        "name": "PROTO"
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "abort",
+      "line": "CMD ABORT 9884",
+      "error": "ok",
+      "command": {
+        "name": "ABORT"
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "start_eval",
+      "line": "CMD START mode=EVAL 5274",
+      "error": "ok",
+      "command": {
+        "name": "START",
+        "mode": "EVAL"
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "start_practice",
+      "line": "CMD START mode=PRACTICE 31A6",
+      "error": "ok",
+      "command": {
+        "name": "START",
+        "mode": "PRACTICE"
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "selftest_default",
+      "line": "CMD SELFTEST 59EE",
+      "error": "ok",
+      "command": {
+        "name": "SELFTEST",
+        "force": false
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "selftest_force",
+      "line": "CMD SELFTEST force=1 F561",
+      "error": "ok",
+      "command": {
+        "name": "SELFTEST",
+        "force": true
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "selftest_no_force",
+      "line": "CMD SELFTEST force=0 E540",
+      "error": "ok",
+      "command": {
+        "name": "SELFTEST",
+        "force": false
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "bright_zero",
+      "line": "CMD BRIGHT pct=0 7601",
+      "error": "ok",
+      "command": {
+        "name": "BRIGHT",
+        "brightness_pct": 0
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "bright_mid",
+      "line": "CMD BRIGHT pct=50 D6F7",
+      "error": "ok",
+      "command": {
+        "name": "BRIGHT",
+        "brightness_pct": 50
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "bright_max",
+      "line": "CMD BRIGHT pct=100 B628",
+      "error": "ok",
+      "command": {
+        "name": "BRIGHT",
+        "brightness_pct": 100
+      },
+      "note": "well-formed"
+    },
+    {
+      "name": "crlf_tolerated",
+      "line": "CMD PING BC9F\r\n",
+      "error": "ok",
+      "command": {
+        "name": "PING"
+      },
+      "note": "trailing CRLF is stripped before validation"
+    },
+    {
+      "name": "lf_tolerated",
+      "line": "CMD PING BC9F\n",
+      "error": "ok",
+      "command": {
+        "name": "PING"
+      },
+      "note": "trailing LF is stripped before validation"
+    },
+    {
+      "name": "start_without_mode",
+      "line": "CMD START FF62",
+      "error": "missing_argument",
+      "command": null,
+      "note": "an unspecified mode must never silently start the scored run"
+    },
+    {
+      "name": "start_bad_mode",
+      "line": "CMD START mode=BOGUS E06E",
+      "error": "bad_argument",
+      "command": null,
+      "note": "mode must be EVAL or PRACTICE"
+    },
+    {
+      "name": "start_empty_mode",
+      "line": "CMD START mode= DDF8",
+      "error": "bad_argument",
+      "command": null,
+      "note": "an empty value is not a valid mode"
+    },
+    {
+      "name": "selftest_bad_force",
+      "line": "CMD SELFTEST force=2 C502",
+      "error": "bad_argument",
+      "command": null,
+      "note": "force is strictly 0 or 1"
+    },
+    {
+      "name": "bright_without_pct",
+      "line": "CMD BRIGHT 9F6E",
+      "error": "missing_argument",
+      "command": null,
+      "note": "pct is required"
+    },
+    {
+      "name": "bright_out_of_range",
+      "line": "CMD BRIGHT pct=101 A609",
+      "error": "bad_argument",
+      "command": null,
+      "note": "pct is 0..100"
+    },
+    {
+      "name": "bright_not_a_number",
+      "line": "CMD BRIGHT pct=abc EAAD",
+      "error": "bad_argument",
+      "command": null,
+      "note": "non-digit value"
+    },
+    {
+      "name": "bright_negative",
+      "line": "CMD BRIGHT pct=-5 0C88",
+      "error": "bad_argument",
+      "command": null,
+      "note": "the wire format is unsigned decimal only"
+    },
+    {
+      "name": "bright_overflow",
+      "line": "CMD BRIGHT pct=99999999999999999999999 434A",
+      "error": "bad_argument",
+      "command": null,
+      "note": "a value too large for 64 bits must be rejected, not wrapped"
+    },
+    {
+      "name": "unknown_command",
+      "line": "CMD FLY 53A3",
+      "error": "unknown_command",
+      "command": null,
+      "note": "unrecognised command name"
+    },
+    {
+      "name": "empty_command_name",
+      "line": "CMD  CB16",
+      "error": "unknown_command",
+      "command": null,
+      "note": "no command name at all"
+    },
+    {
+      "name": "event_line_to_command_parser",
+      "line": "EV 1 118293 HELLO proto=1 fw=1.0.0 C39C",
+      "error": "bad_prefix",
+      "command": null,
+      "note": "a device->host event is not a command"
+    },
+    {
+      "name": "lowercase_prefix",
+      "line": "cmd PING 9C09",
+      "error": "bad_prefix",
+      "command": null,
+      "note": "the prefix is case-sensitive"
+    },
+    {
+      "name": "no_prefix",
+      "line": "PING 6427",
+      "error": "bad_prefix",
+      "command": null,
+      "note": "missing CMD prefix"
+    },
+    {
+      "name": "empty_line",
+      "line": "",
+      "error": "empty_line",
+      "command": null,
+      "note": "nothing at all"
+    },
+    {
+      "name": "newline_only",
+      "line": "\n",
+      "error": "empty_line",
+      "command": null,
+      "note": "terminator with no payload"
+    },
+    {
+      "name": "no_crc_field",
+      "line": "CMD PING",
+      "error": "malformed_crc_field",
+      "command": null,
+      "note": "no CRC appended: the trailing four characters occupy the CRC position but are not hex"
+    },
+    {
+      "name": "crc_not_hex",
+      "line": "CMD PING ZZZZ",
+      "error": "malformed_crc_field",
+      "command": null,
+      "note": "constructed with four non-hex characters where the CRC belongs"
+    },
+    {
+      "name": "crc_wrong_length",
+      "line": "CMD PING AB",
+      "error": "missing_crc_field",
+      "command": null,
+      "note": "constructed with a two-character CRC field"
+    },
+    {
+      "name": "single_character_corruption",
+      "line": "CMD START mode=EVAI 5274",
+      "error": "crc_mismatch",
+      "command": null,
+      "note": "one payload character changed; the CRC must catch it"
+    },
+    {
+      "name": "single_bit_flip",
+      "line": "CMD RTART mode=EVAL 5274",
+      "error": "crc_mismatch",
+      "command": null,
+      "note": "one payload bit flipped; the CRC must catch it"
+    },
+    {
+      "name": "crc_of_a_different_line",
+      "line": "CMD PING 9884",
+      "error": "crc_mismatch",
+      "command": null,
+      "note": "a valid CRC, but for different content"
+    },
+    {
+      "name": "over_length",
+      "line": "CMD BRIGHT pct=50 pad=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 8ED5",
+      "error": "line_too_long",
+      "command": null,
+      "note": "longer than kMaxLineBytes; must be dropped, never truncated"
+    },
+    {
+      "name": "embedded_nul",
+      "line": "CMD PI\u0000NG 0000",
+      "error": "non_printable_character",
+      "command": null,
+      "note": "NUL inside the payload"
+    },
+    {
+      "name": "embedded_tab",
+      "line": "CMD\tPING 0000",
+      "error": "non_printable_character",
+      "command": null,
+      "note": "tab inside the payload"
+    },
+    {
+      "name": "high_bit_set",
+      "line": "CMD PING\u0080 0000",
+      "error": "non_printable_character",
+      "command": null,
+      "note": "byte above 0x7E"
+    },
+    {
+      "name": "exactly_at_length_limit",
+      "line": "CMD BRIGHT pct=50 pad=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 2D97",
+      "error": "ok",
+      "command": {
+        "name": "BRIGHT",
+        "brightness_pct": 50
+      },
+      "note": "319 characters plus the terminator is the longest legal line"
+    }
+  ]
+}

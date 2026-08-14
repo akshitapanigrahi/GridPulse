@@ -1,0 +1,148 @@
+/*
+ * GRID PULSE - arcade feedback effects.
+ *
+ * ACCESSIBILITY CONTRACT
+ * ----------------------
+ * Hit and miss must be distinguishable without colour:
+ *
+ *   hit   cyan   expanding RING, grid pulses outward, cell brightens
+ *   miss  amber  X mark, cell and grid SHAKE laterally, cell darkens
+ *
+ * Different hue, different shape, different motion axis. Any one of the three is
+ * enough to tell them apart.
+ *
+ * PERFORMANCE CONTRACT
+ * --------------------
+ * Every effect animates `transform` and `opacity` only, so it runs on the compositor
+ * and never triggers layout or paint on the main thread while the player is mid-run.
+ * Effect elements are pooled and reused by ui/fx.js - nothing is allocated in the hot
+ * path.
+ */
+
+/* --- hit: expanding ring -------------------------------------------------- */
+
+.fx-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  border: 3px solid var(--cyan);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  z-index: 5;
+}
+.fx-ring[data-run="1"] { animation: fx-ring 340ms var(--ease-out) forwards; }
+
+@keyframes fx-ring {
+  0%   { opacity: 1; transform: scale(1); border-width: 3px; }
+  100% { opacity: 0; transform: scale(1.85); border-width: 1px; }
+}
+
+/* --- hit: bloom ----------------------------------------------------------- */
+
+.fx-bloom {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%,
+              rgba(35, 227, 255, 0.55) 35%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  z-index: 4;
+}
+.fx-bloom[data-run="1"] { animation: fx-bloom 280ms var(--ease-out) forwards; }
+
+@keyframes fx-bloom {
+  0%   { opacity: 0.95; transform: scale(0.55); }
+  100% { opacity: 0;    transform: scale(1.4); }
+}
+
+/* --- miss: X mark, drawn not coloured ------------------------------------- */
+
+.fx-x {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 6;
+  will-change: opacity, transform;
+}
+.fx-x::before, .fx-x::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 12%;
+  width: 76%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 4px;
+  background: var(--amber);
+  box-shadow: 0 0 12px rgba(255, 176, 32, 0.9);
+}
+.fx-x::before { transform: rotate(45deg); }
+.fx-x::after  { transform: rotate(-45deg); }
+.fx-x[data-run="1"] { animation: fx-x 380ms var(--ease-out) forwards; }
+
+@keyframes fx-x {
+  0%   { opacity: 1; transform: scale(0.7); }
+  55%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* --- miss: cell recoil ---------------------------------------------------- */
+
+.cell[data-fx="miss"] {
+  background: #2a1a06;
+  border-color: var(--amber);
+  animation: cell-shake 260ms var(--ease-out);
+}
+@keyframes cell-shake {
+  0%, 100% { transform: translateX(0); }
+  15%  { transform: translateX(-7px); }
+  35%  { transform: translateX(6px); }
+  55%  { transform: translateX(-4px); }
+  75%  { transform: translateX(3px); }
+}
+
+/* --- grid-level reactions -------------------------------------------------- */
+
+/* Hit: the whole grid breathes outward once. Subtle - it must never obscure the
+   next target, which is already lit by the time this plays. */
+.grid[data-fx="hit"] { animation: grid-pulse 180ms var(--ease-out); }
+@keyframes grid-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.012); }
+  100% { transform: scale(1); }
+}
+
+/* Miss: lateral shake on a different axis from the hit's radial pulse. */
+.grid[data-fx="miss"] { animation: grid-shake 220ms var(--ease-out); }
+@keyframes grid-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20%  { transform: translate(-9px, 2px); }
+  45%  { transform: translate(7px, -2px); }
+  70%  { transform: translate(-4px, 1px); }
+}
+
+/* --- chromatic pulse on the page edge -------------------------------------- */
+
+.screen--game::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 20;
+  box-shadow: inset 0 0 120px 10px rgba(35, 227, 255, 0.55);
+  transition: opacity 200ms linear;
+}
+body[data-flash="hit"] .screen--game::after {
+  opacity: 0.5;
+  transition: opacity 40ms linear;
+}
+body[data-flash="miss"] .screen--game::after {
+  opacity: 0.7;
+  box-shadow: inset 0 0 120px 10px rgba(255, 176, 32, 0.6);
+  transition: opacity 40ms linear;
+}

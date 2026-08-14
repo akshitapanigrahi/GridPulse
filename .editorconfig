@@ -1,0 +1,28 @@
+# GRID PULSE - editor defaults, so the tree stays consistent regardless of tooling.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.{c,cpp,h}]
+indent_size = 2
+
+[*.{js,html,css,json}]
+indent_size = 2
+
+[*.py]
+indent_size = 4
+max_line_length = 90
+
+[*.{sh,pio}]
+indent_size = 4
+
+[Makefile]
+indent_style = tab
+
+[*.md]
+trim_trailing_whitespace = false

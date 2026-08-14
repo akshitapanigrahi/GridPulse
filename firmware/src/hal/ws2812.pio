@@ -1,0 +1,82 @@
+;
+; GRID PULSE - WS2812B bit-banging, in PIO.
+;
+; PURPOSE
+;   Generates the WS2812B one-wire waveform from a PIO state machine so the CPU never
+;   touches the timing. The protocol needs sub-microsecond accuracy held for 600
+;   microseconds per frame; doing that on the CPU would mean disabling interrupts for
+;   the whole frame, which on this device would mean not scanning keys - and a missed
+;   key scan is a missed press is a lower score.
+;
+;   With PIO plus DMA, pushing a frame costs the CPU one DMA trigger. The waveform is
+;   produced entirely in hardware while core 1 carries on scanning at 4 kHz.
+;
+; WAVEFORM
+;   WS2812B encodes each bit as a fixed-period pulse whose HIGH time carries the
+;   value:
+;       '0'  ~0.4 us high, ~0.85 us low
+;       '1'  ~0.8 us high, ~0.45 us low
+;   Total bit period ~1.25 us. Tolerances are +/- 150 ns.
+;
+;   The timings below are expressed in state-machine cycles. The C helper sets the
+;   clock divider so that one cycle is 1.25 us / (T1 + T2 + T3) = 125 ns.
+;
+;       T1  cycles the line is high for BOTH bit values   (leading edge)
+;       T2  cycles the line holds the bit-dependent level
+;       T3  cycles the line is low for BOTH bit values    (trailing edge)
+;
+; DATA FORMAT
+;   24 bits per pixel, GRB order, most significant bit first. The C side left-aligns
+;   each pixel into a 32-bit word so autopull can shift out of the top.
+;
+; This is the standard WS2812 program from the Pico SDK examples. It is reproduced
+; here rather than referenced so the firmware builds from this tree alone.
+
+.program ws2812
+.side_set 1
+
+.define public T1 2
+.define public T2 5
+.define public T3 3
+
+.wrap_target
+bitloop:
+    out x, 1       side 0 [T3 - 1]   ; pull the next bit; line low for the tail
+    jmp !x do_zero side 1 [T1 - 1]   ; line high for the shared leading edge
+do_one:
+    jmp bitloop    side 1 [T2 - 1]   ; a '1' stays high through the middle
+do_zero:
+    nop            side 0 [T2 - 1]   ; a '0' drops early
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+// Configures a state machine to drive a WS2812B chain on `pin`.
+//
+// `freq` is the bit rate in Hz (800000 for WS2812B). The divider is computed so one
+// PIO cycle is one (T1 + T2 + T3)th of a bit period.
+static inline void ws2812_program_init(PIO pio, uint sm, uint offset, uint pin,
+                                       float freq) {
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    pio_sm_config c = ws2812_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, pin);
+
+    // Shift left so the most significant bit goes out first, and autopull after 24
+    // bits so the state machine never stalls waiting for a manual push.
+    sm_config_set_out_shift(&c, false, true, 24);
+
+    // The TX FIFO is 4 words deep by default; joining the unused RX FIFO to it gives
+    // 8, which comfortably covers DMA latency.
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+
+    const int cycles_per_bit = ws2812_T1 + ws2812_T2 + ws2812_T3;
+    const float div = (float)clock_get_hz(clk_sys) / (freq * (float)cycles_per_bit);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

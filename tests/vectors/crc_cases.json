@@ -1,0 +1,109 @@
+{
+  "spec_version": "1.0.0",
+  "cases": [
+    {
+      "name": "canonical_check_value",
+      "input": "123456789",
+      "crc16": 10673
+    },
+    {
+      "name": "empty",
+      "input": "",
+      "crc16": 65535
+    },
+    {
+      "name": "single_byte_A",
+      "input": "A",
+      "crc16": 47381
+    },
+    {
+      "name": "ev_hello",
+      "input": "EV 1 0 HELLO proto=1 fw=1.0.0 board=gridpulse-5x5",
+      "crc16": 30019
+    },
+    {
+      "name": "ev_target",
+      "input": "EV 42 1234567 TARGET cell=13 idx=7 repeat=0",
+      "crc16": 39581
+    },
+    {
+      "name": "ev_hit",
+      "input": "EV 43 1240000 HIT cell=13 rt_us=213000 sc=7 si=1 streak=3",
+      "crc16": 40323
+    },
+    {
+      "name": "ev_miss",
+      "input": "EV 44 1250000 MISS pressed=9 target=13 sc=7 si=2",
+      "crc16": 57451
+    },
+    {
+      "name": "ev_end",
+      "input": "EV 900 60000000 END n=25 sc=241 si=12 t_us=60000000 b_mbps=17494",
+      "crc16": 13126
+    },
+    {
+      "name": "cmd_start",
+      "input": "CMD START EVAL N=25",
+      "crc16": 19208
+    },
+    {
+      "name": "cmd_abort",
+      "input": "CMD ABORT",
+      "crc16": 39044
+    }
+  ],
+  "bit_flip_base": {
+    "input": "EV 42 1234567 TARGET cell=13 idx=7 repeat=0",
+    "crc16": 39581
+  },
+  "bit_flips": [
+    {
+      "byte_index": 0,
+      "bit": 0,
+      "mutated": "DV 42 1234567 TARGET cell=13 idx=7 repeat=0",
+      "crc16": 61463
+    },
+    {
+      "byte_index": 0,
+      "bit": 7,
+      "mutated": "\u00c5V 42 1234567 TARGET cell=13 idx=7 repeat=0",
+      "crc16": 47467
+    },
+    {
+      "byte_index": 3,
+      "bit": 0,
+      "mutated": "EV 52 1234567 TARGET cell=13 idx=7 repeat=0",
+      "crc16": 29753
+    },
+    {
+      "byte_index": 3,
+      "bit": 7,
+      "mutated": "EV \u00b42 1234567 TARGET cell=13 idx=7 repeat=0",
+      "crc16": 50925
+    },
+    {
+      "byte_index": 14,
+      "bit": 0,
+      "mutated": "EV 42 1234567 UARGET cell=13 idx=7 repeat=0",
+      "crc16": 27259
+    },
+    {
+      "byte_index": 14,
+      "bit": 7,
+      "mutated": "EV 42 1234567 \u00d4ARGET cell=13 idx=7 repeat=0",
+      "crc16": 5634
+    },
+    {
+      "byte_index": 42,
+      "bit": 0,
+      "mutated": "EV 42 1234567 TARGET cell=13 idx=7 repeat=1",
+      "crc16": 35516
+    },
+    {
+      "byte_index": 42,
+      "bit": 7,
+      "mutated": "EV 42 1234567 TARGET cell=13 idx=7 repeat=\u00b0",
+      "crc16": 2837
+    }
+  ]
+}

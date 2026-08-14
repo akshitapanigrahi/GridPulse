@@ -1,0 +1,158 @@
+/*
+ * GRID PULSE - end-of-run report.
+ *
+ * The assignment requires the final bit rate reported together with N, Sc and Si, so
+ * all four are given equal structural weight and are on screen simultaneously, large
+ * enough to read from across a room or from a phone photo. The copyable text block
+ * below them carries the same four figures plus the audit trail, so a grader can
+ * paste a result somewhere without transcribing anything by hand.
+ */
+
+.screen--results {
+  align-items: center;
+  justify-content: center;
+  justify-content: safe center;
+  height: 100%;
+  padding: clamp(16px, 3vmin, 40px);
+  overflow-y: auto;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 1.8vmin, 22px);
+  width: min(820px, 100%);
+  text-align: center;
+  animation: results-in 420ms var(--ease-out);
+}
+@keyframes results-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.results__kicker {
+  font-family: var(--font-num);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--cyan);
+}
+.results__kicker[data-unscored="1"] { color: var(--amber); }
+
+.results__hero { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+.results__b {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(64px, 17vmin, 190px);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  text-shadow: 0 0 70px rgba(35, 227, 255, 0.75);
+}
+.results__bunit {
+  font-size: clamp(11px, 1.7vmin, 15px);
+  font-weight: 800;
+  letter-spacing: 0.36em;
+  color: var(--text-dim);
+}
+
+/* N, Sc, Si and t: the four figures the assignment asks for, side by side. */
+.results__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap);
+  width: 100%;
+}
+@media (max-width: 560px) {
+  .results__grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.result-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: clamp(10px, 1.8vmin, 18px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.result-stat__label {
+  font-family: var(--font-num);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.18em; color: var(--text-faint);
+}
+.result-stat__value {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(26px, 4.6vmin, 44px);
+  font-weight: 800;
+  color: var(--text);
+}
+.result-stat__note { font-size: 10.5px; color: var(--text-faint); }
+.result-stat--good .result-stat__value { color: var(--mint); }
+.result-stat--bad  .result-stat__value { color: var(--amber); }
+
+.results__formula {
+  font-family: var(--font-num);
+  font-size: clamp(11px, 1.55vmin, 14px);
+  color: var(--text-dim);
+  padding: 10px 16px;
+  background: rgba(11, 15, 30, 0.6);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  line-height: 1.7;
+}
+.results__formula b { color: var(--text); font-weight: 700; }
+
+.results__detail { width: 100%; }
+.detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2px 20px;
+  margin: 0;
+  text-align: left;
+}
+.detail > div {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.detail dt { color: var(--text-faint); }
+.detail dd {
+  margin: 0; font-family: var(--font-num); color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Shown only when the run was interrupted, so its presence is itself the signal. */
+.results__flag {
+  width: 100%;
+  padding: 11px 15px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  text-align: left;
+  color: #2b1c00;
+  background: var(--amber);
+  border-radius: var(--radius-sm);
+}
+.results__flag[hidden] { display: none; }
+
+.results__copy {
+  width: 100%;
+  padding: 12px 14px;
+  font-family: var(--font-num);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  background: #070a14;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  resize: vertical;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.results__copy:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.results__actions { display: flex; gap: var(--gap); flex-wrap: wrap; justify-content: center; }

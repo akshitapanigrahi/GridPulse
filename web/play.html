@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GRID PULSE</title>
+
+<!--
+  GRID PULSE - a bit-rate maximisation game.
+
+  This single page is the whole front end for both input modes. There is no build
+  step, no bundler, no npm, no CDN and no external font: every asset below loads
+  from disk, so double-clicking this file plays the game immediately.
+
+  Everything is a classic <script> tag rather than an ES module, and nothing here
+  fetches an asset at runtime, because a file:// origin is an opaque origin - module
+  scripts, fetch() and XHR are all blocked there. The golden vectors are mirrored
+  into vectors.gen.js for the same reason.
+
+  Load order matters: core before ui before app.
+-->
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/grid.css">
+<link rel="stylesheet" href="css/hud.css">
+<link rel="stylesheet" href="css/fx.css">
+<link rel="stylesheet" href="css/results.css">
+<link rel="stylesheet" href="css/calibrate.css">
+</head>
+
+<body data-screen="launch">
+
+<!-- Persistent statement of whether the keypad is live: green connected, grey not.
+     It reports the device, not the input mode - the keyboard is always available, so
+     naming it carries no information. A degraded link appends its reason, so the badge
+     stays a single quiet word until there is something to say. Which mode actually
+     produced a score is stated on the results screen and in every log record. -->
+<div id="mode-badge" class="mode-badge" role="status" aria-live="polite" data-link="off">
+  <span class="mode-badge__dot" aria-hidden="true"></span>
+  <span class="mode-badge__label" id="mode-badge-label">KEYBOARD</span>
+</div>
+
+<!-- The opposite corner to the mode badge. HOME appears on the results screen only -
+     during a run this corner must stay clear of anything that would end it - while the
+     sound toggle is always there, so it can be silenced mid-run without stopping. -->
+<div class="corner-right">
+  <button id="btn-home" class="home-btn" type="button">&#8592; HOME</button>
+  <button id="btn-sound" class="icon-btn" type="button"
+          aria-pressed="true" aria-label="Sound on" title="Sound on"></button>
+</div>
+
+
+<!-- ══════════════════════════ LAUNCH ══════════════════════════ -->
+<main class="screen screen--launch" id="screen-launch">
+  <header class="launch__head">
+    <h1 class="logo">
+      <span class="logo__grid">GRID</span><span class="logo__pulse">PULSE</span>
+    </h1>
+    <p class="tagline">
+      Hit the lit cell. Miss and it stays lit. 60 seconds.
+      Maximize your bit rate.
+    </p>
+  </header>
+
+  <section class="modes" aria-label="Input mode">
+    <button class="mode-card" id="mode-hardware" type="button" aria-pressed="false">
+      <span class="mode-card__kicker">MODE A</span>
+      <span class="mode-card__name">HARDWARE</span>
+      <span class="mode-card__body">5×5 illuminated keypad. The game runs on the
+        device; the browser is a display.</span>
+      <span class="mode-card__status" id="mode-hardware-status">checking…</span>
+    </button>
+
+    <button class="mode-card" id="mode-keyboard" type="button" aria-pressed="true">
+      <span class="mode-card__kicker">MODE B</span>
+      <span class="mode-card__name">KEYBOARD</span>
+      <span class="mode-card__body">The same game on the keys you already know.
+        No hardware needed.</span>
+      <span class="mode-card__status mode-card__status--ok">ready</span>
+    </button>
+  </section>
+
+  <section class="howto" aria-label="How to play">
+    <ol class="howto__steps">
+      <li><b>One cell lights up.</b> Press that key.</li>
+      <li><b>A miss keeps the target lit.</b> You still have to hit it, and a miss
+        cancels a hit, so accuracy is worth as much as speed.</li>
+      <li><b>Targets are drawn uniformly at random, with replacement.</b> The same
+        cell can come up twice in a row. There is no pattern to learn.</li>
+    </ol>
+    <p class="howto__layout" id="howto-layout">
+      The grid follows QWERTY keyboard rows.
+    </p>
+  </section>
+
+  <section class="launch__actions">
+    <button class="btn btn--ghost" id="btn-practice" type="button">
+      PRACTICE <span class="btn__sub">untimed · unscored</span>
+    </button>
+    <button class="btn btn--primary" id="btn-eval" type="button">
+      START RUN <span class="btn__sub">60s · scored</span>
+    </button>
+  </section>
+
+  <footer class="launch__foot">
+    <!-- Hardware only: there is nothing to calibrate about a keyboard. -->
+    <button class="btn btn--ghost btn--tiny" id="btn-calibrate" type="button" hidden>
+      RE-CALIBRATE KEYPAD
+    </button>
+  </footer>
+</main>
+
+
+<!-- ══════════════════════════ GAME ══════════════════════════ -->
+<main class="screen screen--game" id="screen-game">
+
+  <div class="hud hud--top">
+    <div class="stat stat--hero">
+      <div class="stat__label">BITS / SEC</div>
+      <div class="stat__value stat__value--hero" id="hud-bps">0.00</div>
+      <div class="stat__sub">cumulative over all elapsed time</div>
+    </div>
+
+    <div class="hud__column">
+      <div class="stat">
+        <div class="stat__label">STREAK</div>
+        <div class="stat__value" id="hud-streak">0</div>
+      </div>
+    </div>
+
+    <div class="hud__column">
+      <div class="stat"><div class="stat__label">N</div><div class="stat__value" id="hud-n">25</div></div>
+      <div class="stat stat--good"><div class="stat__label">Sc</div><div class="stat__value" id="hud-sc">0</div></div>
+      <div class="stat stat--bad"><div class="stat__label">Si</div><div class="stat__value" id="hud-si">0</div></div>
+    </div>
+
+    <div class="hud__column">
+      <div class="stat">
+        <div class="stat__label">TIME</div>
+        <div class="stat__value" id="hud-time">60 s</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">LAST</div>
+        <div class="stat__value stat__value--small" id="hud-latency">— ms</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timebar" aria-hidden="true"><div class="timebar__fill" id="timebar-fill"></div></div>
+
+  <div class="stage" id="stage">
+    <div class="grid" id="grid" role="group" aria-label="5 by 5 target grid"></div>
+
+    <div class="overlay overlay--countdown" id="overlay-countdown" hidden>
+      <div class="countdown__number" id="countdown-number">3</div>
+      <div class="countdown__hint">get ready</div>
+    </div>
+
+    <div class="overlay overlay--focus" id="overlay-focus" hidden>
+      <div class="overlay__title">PAUSED</div>
+      <div class="overlay__body">
+        The window lost focus, so the clock stopped. Click anywhere to resume.<br>
+        This run is flagged as interrupted and the results will show both the paused
+        and wall-clock rates.
+      </div>
+    </div>
+  </div>
+
+  <div class="hud hud--bottom">
+    <canvas class="sparkline" id="sparkline" width="900" height="90"
+            aria-label="Bit rate over the run"></canvas>
+    <div class="sparkline__legend">
+      <span class="legend legend--cumulative">bits/sec over the run</span>
+      <button class="btn btn--tiny" id="btn-abort" type="button">ABORT</button>
+    </div>
+  </div>
+
+  <div class="practice-banner" id="practice-banner" hidden>PRACTICE — UNSCORED</div>
+</main>
+
+
+<!-- ══════════════════════════ RESULTS ══════════════════════════ -->
+<main class="screen screen--results" id="screen-results">
+  <div class="results">
+    <div class="results__kicker" id="results-kicker">60-SECOND EVALUATION COMPLETE</div>
+
+    <div class="results__hero">
+      <div class="results__b" id="results-b">0.00</div>
+      <div class="results__bunit">BITS PER SECOND</div>
+    </div>
+
+    <div class="results__grid">
+      <div class="result-stat"><div class="result-stat__label">N</div>
+        <div class="result-stat__value" id="results-n">25</div>
+        <div class="result-stat__note" id="results-bits">4.585 bits / selection</div></div>
+      <div class="result-stat result-stat--good"><div class="result-stat__label">Sc</div>
+        <div class="result-stat__value" id="results-sc">0</div>
+        <div class="result-stat__note">correct</div></div>
+      <div class="result-stat result-stat--bad"><div class="result-stat__label">Si</div>
+        <div class="result-stat__value" id="results-si">0</div>
+        <div class="result-stat__note">incorrect</div></div>
+      <div class="result-stat"><div class="result-stat__label">t</div>
+        <div class="result-stat__value" id="results-t">60.0</div>
+        <div class="result-stat__note">seconds</div></div>
+    </div>
+
+    <div class="results__formula" id="results-formula"></div>
+
+    <div class="results__detail">
+      <dl class="detail">
+        <div><dt>Accuracy</dt><dd id="results-accuracy">—</dd></div>
+        <div><dt>Presses / sec</dt><dd id="results-pps">—</dd></div>
+        <div><dt>Best streak</dt><dd id="results-streak">—</dd></div>
+        <div><dt>Reaction p50 / p95 / p99</dt><dd id="results-latency">—</dd></div>
+        <div><dt>Repeat targets</dt><dd id="results-repeats">—</dd></div>
+        <div><dt>Input mode</dt><dd id="results-inputmode">—</dd></div>
+        <div><dt>RNG seed</dt><dd id="results-seed">—</dd></div>
+      </dl>
+    </div>
+
+    <div class="results__flag" id="results-flag" hidden></div>
+
+    <textarea class="results__copy" id="results-copy" readonly rows="7"
+              aria-label="Copyable result summary"></textarea>
+
+    <div class="results__actions">
+      <button class="btn btn--ghost btn--tiny" id="btn-copy" type="button">COPY RESULT</button>
+      <button class="btn btn--ghost btn--tiny" id="btn-download" type="button">DOWNLOAD LOG</button>
+    </div>
+  </div>
+</main>
+
+
+<!-- ══════════════════════════ CALIBRATION ══════════════════════════ -->
+<main class="screen screen--calibrate" id="screen-calibrate">
+  <div class="cal" id="cal-root" data-phase="idle">
+
+    <header class="cal__head">
+      <div class="cal__kicker">MODE A · HARDWARE</div>
+      <h2 class="cal__title">Keypad calibration</h2>
+      <p class="cal__blurb">
+        Each cell lights in turn, in grid order, left to right, top to bottom. Press
+        the key under the lit key.
+      </p>
+    </header>
+
+    <div class="cal__bar"><div class="cal__bar-fill" id="cal-bar"></div></div>
+
+    <div class="cal__grid" id="cal-grid" role="group"
+         aria-label="Calibration results by cell"></div>
+
+    <div class="cal__legend">
+      <span><b class="k-ok">OK</b> registered</span>
+      <span><b class="k-nokey">NO KEY</b> nothing pressed in 5 s</span>
+      <span><b class="k-stuck">STUCK</b> switch already closed at boot</span>
+      <span><b class="k-next">outlined</b> expected</span>
+    </div>
+
+    <div class="cal__summary" id="cal-summary" hidden></div>
+
+    <div class="cal__actions">
+      <button class="btn btn--primary" id="cal-btn-start" type="button">START CALIBRATION</button>
+      <button class="btn btn--ghost btn--tiny" id="cal-btn-cancel" type="button">CANCEL</button>
+      <button class="btn btn--ghost" id="cal-btn-done" type="button">DONE</button>
+    </div>
+  </div>
+</main>
+
+
+<!-- game core: pure logic, no DOM -->
+<script src="core/rng.js"></script>
+<script src="core/scoring.js"></script>
+<script src="core/alphabet.js"></script>
+<script src="core/boardmap.js"></script>
+<script src="core/session.js"></script>
+
+<!-- presentation -->
+<script src="ui/grid.js"></script>
+<script src="ui/fx.js"></script>
+<script src="ui/sound.js"></script>
+<script src="ui/hud.js"></script>
+<script src="ui/sparkline.js"></script>
+<script src="ui/calibrate.js"></script>
+
+<!-- transports: keyboard is always available; SSE only when the host bridge serves us -->
+<script src="transport/local.js"></script>
+<script src="transport/sse.js"></script>
+
+<!-- controller -->
+<script src="ui/app.js"></script>
+
+</body>
+</html>

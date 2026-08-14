@@ -1,0 +1,20 @@
+# GRID PULSE - C++ formatting.
+#
+# Google style with a 90-column limit. Google because it is unambiguous, widely
+# understood and needs no justification; 90 rather than 80 because the descriptive
+# names this codebase uses (kDebounceLockoutUs, PresentNextTarget) push a lot of
+# lines just past the shorter limit for no readability gain.
+#
+# Apply:  clang-format -i firmware/src/**/*.{h,cpp} firmware/include/*.h tests/native/*.{h,cpp}
+
+BasedOnStyle: Google
+Language: Cpp
+Standard: c++17
+ColumnLimit: 90
+DerivePointerAlignment: false
+PointerAlignment: Left
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+IncludeBlocks: Preserve
+SortIncludes: CaseSensitive

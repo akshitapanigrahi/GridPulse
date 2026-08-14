@@ -1,0 +1,269 @@
+{
+  "spec_version": "1.0.0",
+  "cases": [
+    {
+      "name": "zero_time_guard",
+      "n": 25,
+      "correct": 10,
+      "incorrect": 0,
+      "elapsed_s": 0.0,
+      "note": "t <= 0 must return 0, not divide by zero",
+      "bit_rate": 0.0,
+      "b_mbps": 0,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "negative_time_guard",
+      "n": 25,
+      "correct": 10,
+      "incorrect": 0,
+      "elapsed_s": -1.0,
+      "note": "defensive: negative t returns 0",
+      "bit_rate": 0.0,
+      "b_mbps": 0,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "no_events",
+      "n": 25,
+      "correct": 0,
+      "incorrect": 0,
+      "elapsed_s": 60.0,
+      "note": "nothing pressed scores 0",
+      "bit_rate": 0.0,
+      "b_mbps": 0,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "si_exceeds_sc",
+      "n": 25,
+      "correct": 10,
+      "incorrect": 20,
+      "elapsed_s": 60.0,
+      "note": "max(Sc-Si,0) clamps to exactly 0",
+      "bit_rate": 0.0,
+      "b_mbps": 0,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "si_equals_sc",
+      "n": 25,
+      "correct": 10,
+      "incorrect": 10,
+      "elapsed_s": 60.0,
+      "note": "net zero scores exactly 0",
+      "bit_rate": 0.0,
+      "b_mbps": 0,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "si_one_less",
+      "n": 25,
+      "correct": 11,
+      "incorrect": 10,
+      "elapsed_s": 60.0,
+      "note": "net one is the smallest positive score",
+      "bit_rate": 0.07641604167868593,
+      "b_mbps": 76,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_below_min",
+      "n": 2,
+      "correct": 50,
+      "incorrect": 0,
+      "elapsed_s": 60.0,
+      "note": "N < 3 is not a scorable session",
+      "bit_rate": 0.0,
+      "b_mbps": 0,
+      "bits_per_selection": 0.0
+    },
+    {
+      "name": "n_min_three",
+      "n": 3,
+      "correct": 60,
+      "incorrect": 0,
+      "elapsed_s": 60.0,
+      "note": "log2(2)=1 bit per selection -> exactly 1.0 bps",
+      "bit_rate": 1.0,
+      "b_mbps": 1000,
+      "bits_per_selection": 1.0
+    },
+    {
+      "name": "n_three_with_misses",
+      "n": 3,
+      "correct": 60,
+      "incorrect": 15,
+      "elapsed_s": 60.0,
+      "note": "N=3 with misses",
+      "bit_rate": 0.75,
+      "b_mbps": 750,
+      "bits_per_selection": 1.0
+    },
+    {
+      "name": "n_24_selftest_reduced",
+      "n": 24,
+      "correct": 200,
+      "incorrect": 10,
+      "elapsed_s": 60.0,
+      "note": "one dead cell excluded by SELFTEST",
+      "bit_rate": 14.324612860847207,
+      "b_mbps": 14325,
+      "bits_per_selection": 4.523561956057013
+    },
+    {
+      "name": "n_25_nominal",
+      "n": 25,
+      "correct": 200,
+      "incorrect": 10,
+      "elapsed_s": 60.0,
+      "note": "the expected shape of a good run",
+      "bit_rate": 14.519047918950328,
+      "b_mbps": 14519,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_perfect_fast",
+      "n": 25,
+      "correct": 300,
+      "incorrect": 0,
+      "elapsed_s": 60.0,
+      "note": "5 presses/sec, no misses",
+      "bit_rate": 22.92481250360578,
+      "b_mbps": 22925,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_sloppy_fast",
+      "n": 25,
+      "correct": 300,
+      "incorrect": 100,
+      "elapsed_s": 60.0,
+      "note": "fast but inaccurate; misses cost double",
+      "bit_rate": 15.283208335737188,
+      "b_mbps": 15283,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_slow_accurate",
+      "n": 25,
+      "correct": 120,
+      "incorrect": 0,
+      "elapsed_s": 60.0,
+      "note": "2 presses/sec, no misses",
+      "bit_rate": 9.169925001442312,
+      "b_mbps": 9170,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_single_hit",
+      "n": 25,
+      "correct": 1,
+      "incorrect": 0,
+      "elapsed_s": 60.0,
+      "note": "one hit in the whole window",
+      "bit_rate": 0.07641604167868593,
+      "b_mbps": 76,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_one_second",
+      "n": 25,
+      "correct": 4,
+      "incorrect": 0,
+      "elapsed_s": 1.0,
+      "note": "early in the run, small t",
+      "bit_rate": 18.339850002884624,
+      "b_mbps": 18340,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_sub_second",
+      "n": 25,
+      "correct": 1,
+      "incorrect": 0,
+      "elapsed_s": 0.25,
+      "note": "first hit lands very early",
+      "bit_rate": 18.339850002884624,
+      "b_mbps": 18340,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_long_session",
+      "n": 25,
+      "correct": 1000,
+      "incorrect": 50,
+      "elapsed_s": 600.0,
+      "note": "practice-length session",
+      "bit_rate": 7.259523959475164,
+      "b_mbps": 7260,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_partial_window",
+      "n": 25,
+      "correct": 137,
+      "incorrect": 9,
+      "elapsed_s": 42.5,
+      "note": "non-integer elapsed time",
+      "bit_rate": 13.80882823746607,
+      "b_mbps": 13809,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "rounding_half_up",
+      "n": 3,
+      "correct": 1,
+      "incorrect": 0,
+      "elapsed_s": 2.0,
+      "note": "B=0.5 exactly -> 500 mbps",
+      "bit_rate": 0.5,
+      "b_mbps": 500,
+      "bits_per_selection": 1.0
+    },
+    {
+      "name": "rounding_tiny",
+      "n": 25,
+      "correct": 1,
+      "incorrect": 0,
+      "elapsed_s": 4584.962500721156,
+      "note": "B ~= 0.001 -> rounding boundary",
+      "bit_rate": 0.001,
+      "b_mbps": 1,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "high_rate",
+      "n": 25,
+      "correct": 480,
+      "incorrect": 0,
+      "elapsed_s": 60.0,
+      "note": "8 presses/sec, no misses",
+      "bit_rate": 36.67970000576925,
+      "b_mbps": 36680,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_all_misses",
+      "n": 25,
+      "correct": 0,
+      "incorrect": 50,
+      "elapsed_s": 60.0,
+      "note": "only misses scores 0",
+      "bit_rate": 0.0,
+      "b_mbps": 0,
+      "bits_per_selection": 4.584962500721156
+    },
+    {
+      "name": "n_25_equal_large",
+      "n": 25,
+      "correct": 500,
+      "incorrect": 500,
+      "elapsed_s": 60.0,
+      "note": "large equal counts still exactly 0",
+      "bit_rate": 0.0,
+      "b_mbps": 0,
+      "bits_per_selection": 4.584962500721156
+    }
+  ]
+}

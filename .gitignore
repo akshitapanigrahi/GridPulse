@@ -1,0 +1,32 @@
+# Build output
+firmware/build/
+tests/native/obj/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.dis
+
+# The prebuilt firmware IS committed on purpose, so a grader can flash the board
+# without installing an ARM toolchain. Do not add firmware/prebuilt/ here.
+
+# Session logs are per-run artefacts, not source.
+logs/*.jsonl
+logs/*.csv
+
+# OS and editor noise
+.DS_Store
+*.swp
+.vscode/
+.idea/
+compile_commands.json
+
+# Python
+__pycache__/
+*.pyc
+
+# Local documentation and runtime logs
+logs/
+firmware/build-from-ddr/

@@ -1,0 +1,275 @@
+/*
+ * GRID PULSE - calibration screen.
+ *
+ * Same dark arcade theme as the rest of the page (see base.css for the tokens).
+ *
+ * Cell state is carried by data-status and, as everywhere else in this project,
+ * never by colour alone: each state also has a distinct verdict word printed inside
+ * the cell and a distinct border weight, so the screen is readable with any colour
+ * vision deficiency and in a screenshot printed in greyscale.
+ */
+
+/* base.css hides every .screen and reveals one per data-screen value; this adds the
+   calibration screen to that set. Loaded after base.css, so it simply appends. */
+body[data-screen="calibrate"] #screen-calibrate { display: flex; }
+
+.screen--calibrate {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--gap);
+  padding: clamp(16px, 3vmin, 40px);
+  /* body sets overflow:hidden, so a screen only scrolls if it is itself height-bound.
+     Without this the panel grows past the viewport and the buttons at the bottom are
+     clipped away with no way to reach them. Same pattern as .screen--launch. */
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* 780px, not 760: --playfield caps at 780, and a narrower panel would clip the grid
+   back below the game's size on a tall display - which is the one thing this screen
+   must not do. */
+.cal {
+  width: min(780px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.cal__head { text-align: center; }
+
+.cal__kicker {
+  font: 600 0.72rem/1 var(--font-ui);
+  letter-spacing: 0.18em;
+  color: var(--violet);
+  text-transform: uppercase;
+}
+
+.cal__title {
+  margin: 0.3rem 0 0;
+  font: 700 clamp(1.3rem, 2.8vmin, 1.75rem)/1.1 var(--font-ui);
+  letter-spacing: 0.02em;
+}
+
+.cal__blurb {
+  margin: 0.45rem auto 0;
+  max-width: 60ch;
+  font: 400 0.82rem/1.45 var(--font-ui);
+  color: var(--text-dim);
+}
+
+/* -- progress ------------------------------------------------------------------- */
+
+.cal__bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.cal__bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--violet), var(--cyan));
+  transition: width 220ms var(--ease-out);
+}
+
+/* -- the grid ------------------------------------------------------------------- */
+
+/* The game grid's shape and sizing, capped so the whole screen still fits.
+ *
+ * The point of the walk is that the screen mirrors the keypad 1:1, so this is square
+ * with the same gap and the same width token as the grid you actually play on. Where
+ * there is room it is exactly the same size.
+ *
+ * The second term is what keeps everything on screen. --playfield subtracts the GAME
+ * screen's chrome, and this screen has different chrome: a title and blurb, the bar,
+ * the legend and two buttons. Sizing from --playfield alone pushed the instructions
+ * and the START button below the fold on a laptop. Subtracting this screen's own
+ * chrome instead makes it fit by construction rather than by luck.
+ *
+ * --cal-chrome is everything here that is not the grid, and it is NOT a single
+ * number - assuming it was is how the first attempt still scrolled at around 1000px
+ * tall. The screen padding, the panel gaps and the title are all vmin-based clamps,
+ * so the chrome grows with the window:
+ *
+ *     screen padding, top and bottom       2 x clamp(16px, 3vmin, 40px)
+ *     four --gap gaps between children     4 x clamp(8px, 1.1vmin, 16px)
+ *     header: kicker, title, blurb         ~81px + a vmin-scaled title
+ *     progress bar                         4px
+ *     legend, allowing two wrapped lines   32px
+ *     action bar: its padding-top plus a    clamp(8px, 1.1vmin, 16px) + 37px
+ *       single-line button at 9px padding
+ *
+ * which measures 234px at vmin 600 rising to 325px at vmin 1440, and is bounded by
+ * 170px + 13vmin across that range - leaving at least 20px of headroom everywhere.
+ * (The action bar's own padding-top was missed in an earlier revision of this sum;
+ * the buttons being shorter now more than covers it.)
+ *
+ * .screen--calibrate keeps overflow-y: auto as the safety net: if a window turns up
+ * where this is still short it scrolls, rather than clipping the buttons away with no
+ * way to reach them.
+ */
+.cal__grid {
+  --cal-chrome: calc(170px + 13vmin);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: clamp(6px, 1.1vmin, 14px);
+  width: min(var(--playfield), calc(100vh - var(--cal-chrome)));
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+
+.cal-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: background 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+
+.cal-cell__index {
+  font: 600 clamp(0.85rem, 2vmin, 1.15rem)/1 var(--font-num);
+  color: var(--text);
+}
+
+.cal-cell__pins {
+  font: 400 clamp(0.5rem, 1.15vmin, 0.65rem)/1 var(--font-num);
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.cal-cell__verdict {
+  font: 600 clamp(0.5rem, 1.15vmin, 0.66rem)/1 var(--font-ui);
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+.cal-cell[data-status="ok"] {
+  border-color: var(--mint);
+  background: color-mix(in srgb, var(--mint) 12%, var(--surface));
+}
+.cal-cell[data-status="ok"] .cal-cell__verdict { color: var(--mint); }
+
+.cal-cell[data-status="nokey"] {
+  border-color: var(--amber);
+  border-width: 2px;
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface));
+}
+.cal-cell[data-status="nokey"] .cal-cell__verdict { color: var(--amber); }
+
+.cal-cell[data-status="stuck"] {
+  border-color: var(--magenta);
+  border-width: 2px;
+  background: color-mix(in srgb, var(--magenta) 14%, var(--surface));
+}
+.cal-cell[data-status="stuck"] .cal-cell__verdict { color: var(--magenta); }
+
+.cal-cell[data-status="skipped"] {
+  border-style: dashed;
+  border-color: var(--magenta);
+  opacity: 0.75;
+}
+.cal-cell[data-status="skipped"] .cal-cell__verdict { color: var(--magenta); }
+
+/* The inferred "probably lit right now" hint. Deliberately soft: it is a prediction
+   from the walk order, not something the device reported. See calibrate.js. */
+.cal-cell--next {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--violet) 35%, transparent);
+  animation: cal-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes cal-breathe {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-cell--next { animation: none; }
+  .cal__bar-fill  { transition: none; }
+}
+
+/* -- legend --------------------------------------------------------------------- */
+
+.cal__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+  font: 400 0.72rem/1.4 var(--font-ui);
+  color: var(--text-faint);
+}
+
+.cal__legend b { font-weight: 600; }
+.cal__legend .k-ok      { color: var(--mint); }
+.cal__legend .k-nokey   { color: var(--amber); }
+.cal__legend .k-stuck   { color: var(--magenta); }
+.cal__legend .k-next    { color: var(--violet); }
+
+/* -- summary -------------------------------------------------------------------- */
+
+.cal__summary {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: clamp(10px, 1.8vmin, 18px);
+  font: 400 0.85rem/1.55 var(--font-ui);
+  color: var(--text-dim);
+}
+
+.cal__summary p { margin: 0 0 0.6rem; }
+.cal__summary p:last-child { margin-bottom: 0; }
+.cal__summary .cal-ok  { color: var(--mint); }
+.cal__summary .cal-bad { color: var(--amber); }
+
+.cal__summary .cal-note {
+  display: block;
+  border-left: 2px solid var(--amber);
+  padding-left: 0.7rem;
+  color: var(--text);
+}
+
+/* -- actions -------------------------------------------------------------------- */
+
+/* Stuck to the bottom of the scrollport. On a short window the grid scrolls under it
+   rather than pushing START out of reach - which is exactly what went wrong the first
+   time round, and no amount of careful height arithmetic guarantees it won't again on
+   some other screen. */
+.cal__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--gap);
+  padding-top: var(--gap);
+  margin-top: auto;
+  background: linear-gradient(180deg, transparent, var(--bg) 40%);
+}
+
+/* Shorter than the launch screen's buttons. These sit under a grid that wants every
+   pixel it can get, and every millimetre spent on button padding here comes straight
+   off the grid. Overrides .btn--tiny on CANCEL too, by specificity, so all three are
+   the same height rather than one being stretched to match the others. */
+.cal__actions .btn {
+  padding: 9px 22px;
+}
+
+/* Which buttons make sense depends entirely on where the walk has got to. */
+.cal[data-phase="idle"]    #cal-btn-done,
+.cal[data-phase="running"] #cal-btn-start,
+.cal[data-phase="running"] #cal-btn-done,
+.cal[data-phase="done"]    #cal-btn-cancel,
+.cal[data-phase="stalled"] #cal-btn-cancel { display: none; }
+
+.cal[data-phase="done"]    #cal-btn-start,
+.cal[data-phase="stalled"] #cal-btn-start { display: inline-flex; }

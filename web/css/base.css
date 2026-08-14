@@ -1,0 +1,380 @@
+/*
+ * GRID PULSE - design tokens, reset, screen scaffolding, launch screen.
+ *
+ * Deliberately a single dark arcade theme rather than a theme-aware page: this is a
+ * full-screen game, the contrast ratios are tuned for a lit target against a dark
+ * field, and a light variant would work against the one thing the visual design has
+ * to do - make the lit cell unmissable in peripheral vision.
+ *
+ * Colour is never the sole carrier of meaning. Hit and miss differ in colour AND in
+ * animation AND in shape, so the game is fully playable with colour vision
+ * deficiency. See fx.css.
+ *
+ * No external fonts. System stacks only, so nothing loads over the network.
+ */
+
+:root {
+  /* surfaces */
+  --bg:            #05060d;
+  --bg-glow:       #0a1030;
+  --surface:       #0b0f1e;
+  --surface-2:     #121830;
+  --line:          #1e2745;
+
+  /* text */
+  --text:          #e9edfb;
+  --text-dim:      #98a2c4;
+  --text-faint:    #5d688c;
+
+  /* neon accents */
+  --cyan:          #23e3ff;
+  --cyan-dim:      #0f7f96;
+  --magenta:       #ff2ea6;
+  --violet:        #8b5cff;
+  --amber:         #ffb020;
+  --mint:          #46f0a8;
+
+  /* semantic - always paired with a distinct animation, never colour alone */
+  --hit:           var(--cyan);
+  --miss:          var(--amber);
+  --target:        #ffffff;
+
+  /* geometry */
+  --radius:        14px;
+  --radius-sm:     8px;
+  --gap:           clamp(8px, 1.1vmin, 16px);
+
+  /* motion */
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-snap:     cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+             Arial, sans-serif;
+  --font-num: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+              "Liberation Mono", monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* `hidden` must actually hide.
+ *
+ * The attribute carries only a user-agent `display: none`, which ANY author rule
+ * setting `display` outranks - and a lot of them do. `.btn` is `display: inline-flex`,
+ * so the RE-CALIBRATE KEYPAD button sat there in plain sight in Mode B while its
+ * `hidden` property was perfectly true: the JavaScript was right and the pixels were
+ * wrong. The per-element `[hidden]` rules in grid.css and results.css are patches for
+ * this same trap, one element at a time. This is the general fix, and `!important` is
+ * what makes it survive the next `display` declaration somebody adds.
+ */
+[hidden] { display: none !important; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% -10%, var(--bg-glow) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 50% 110%, #150a26 0%, transparent 70%);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  /* The player is hammering 25 keys; text selection drag would be noise. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* --- screen switching ---------------------------------------------------- */
+
+.screen { display: none; }
+body[data-screen="launch"]  #screen-launch  { display: flex; }
+body[data-screen="game"]    #screen-game    { display: flex; }
+body[data-screen="results"] #screen-results { display: flex; }
+
+.screen--launch {
+  flex-direction: column;
+  align-items: center;
+  /* `safe` keeps the top of the content reachable when it is taller than the
+     viewport - plain centring would push it off the top with no way to scroll to. */
+  justify-content: center;
+  justify-content: safe center;
+  gap: clamp(14px, 2.4vmin, 30px);
+  height: 100%;
+  padding: clamp(16px, 3vmin, 40px);
+  overflow-y: auto;
+}
+
+/* --- launch: identity ---------------------------------------------------- */
+
+.launch__head { text-align: center; }
+
+.logo {
+  margin: 0;
+  font-size: clamp(38px, 8.4vmin, 96px);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+.logo__grid {
+  color: var(--text);
+  text-shadow: 0 0 26px rgba(35, 227, 255, 0.5);
+}
+.logo__pulse {
+  color: var(--magenta);
+  text-shadow: 0 0 26px rgba(255, 46, 166, 0.65);
+  animation: logo-pulse 2.6s var(--ease-out) infinite;
+}
+@keyframes logo-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.72; }
+}
+
+.tagline {
+  margin: 0.7em 0 0;
+  color: var(--text-dim);
+  font-size: clamp(13px, 1.9vmin, 18px);
+  letter-spacing: 0.02em;
+}
+
+/* --- launch: mode selection ---------------------------------------------- */
+
+.modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--gap);
+  width: min(760px, 100%);
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: clamp(12px, 2vmin, 20px);
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 160ms, background 160ms, transform 160ms var(--ease-out);
+}
+.mode-card:hover:not([disabled]) { transform: translateY(-2px); border-color: #33406e; }
+.mode-card[aria-pressed="true"] {
+  border-color: var(--cyan);
+  background: linear-gradient(180deg, rgba(35, 227, 255, 0.10), transparent 60%), var(--surface);
+  box-shadow: 0 0 0 1px rgba(35, 227, 255, 0.35), 0 10px 40px -18px rgba(35, 227, 255, 0.8);
+}
+.mode-card[disabled] { opacity: 0.42; cursor: not-allowed; }
+
+.mode-card__kicker {
+  font-size: 11px; letter-spacing: 0.22em; color: var(--text-faint); font-weight: 700;
+}
+.mode-card__name {
+  font-size: clamp(20px, 3vmin, 28px); font-weight: 800; letter-spacing: 0.04em;
+}
+.mode-card__body { font-size: 13px; line-height: 1.5; color: var(--text-dim); }
+.mode-card__status {
+  margin-top: 4px; font-family: var(--font-num); font-size: 11.5px;
+  color: var(--text-faint); letter-spacing: 0.04em;
+}
+.mode-card__status--ok { color: var(--mint); }
+
+/* --- launch: instructions ------------------------------------------------ */
+
+.howto {
+  width: min(760px, 100%);
+  padding: clamp(12px, 2vmin, 20px);
+  background: rgba(11, 15, 30, 0.6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.howto__steps {
+  margin: 0; padding-left: 1.3em;
+  display: flex; flex-direction: column; gap: 7px;
+  font-size: 13.5px; line-height: 1.55; color: var(--text-dim);
+}
+.howto__steps b { color: var(--text); font-weight: 700; }
+/* The other thing that differs between the modes: this line's text. The hardware
+ * sentence is the longer of the two, so on a narrow window it wraps to two lines while
+ * the keyboard one stays at one - and the buttons below jump. Reserving two lines and
+ * centring within them keeps the box the same size whatever it says.
+ */
+.howto__layout {
+  margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--line);
+  font-size: 12.5px; color: var(--text-faint); line-height: 1.5;
+  min-height: 3em;
+  display: flex; align-items: center;
+}
+
+/* --- buttons ------------------------------------------------------------- */
+
+.launch__actions { display: flex; gap: var(--gap); flex-wrap: wrap; justify-content: center; }
+
+.btn {
+  /* justify-content is the VERTICAL axis here, the flex direction being column, and it
+     defaults to flex-start. That is invisible while a button is its natural height and
+     obvious the moment one is stretched: a row of buttons stretches every item to the
+     tallest, so a shorter button - CANCEL, which is btn--tiny next to full-size
+     neighbours - had its label pinned to the top of its own box. */
+  display: inline-flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  padding: 14px 26px;
+  font: inherit; font-weight: 800; letter-spacing: 0.08em; font-size: 14px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 120ms var(--ease-snap), box-shadow 160ms, border-color 160ms;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+.btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+.btn--primary {
+  color: #04121a;
+  background: linear-gradient(180deg, #6df2ff, var(--cyan));
+  border-color: transparent;
+  box-shadow: 0 10px 40px -14px rgba(35, 227, 255, 0.9);
+}
+.btn--ghost { background: transparent; }
+.btn--ghost:hover { border-color: #33406e; }
+.btn--tiny { padding: 8px 14px; font-size: 11.5px; letter-spacing: 0.1em; }
+
+.btn__sub {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.05em; opacity: 0.7;
+  text-transform: none;
+}
+
+/* Reserve the calibrate button's height in BOTH modes.
+ *
+ * The launch screen is a centred column, so anything that changes the height of one
+ * child moves every other child. This footer is empty in Mode B and holds a ~32px
+ * button in Mode A; at `min-height: 1em` it collapsed to ~12px, and the whole page
+ * slid up and down by ~20px on every mode switch. Reserving the taller case means the
+ * button appears and disappears without anything else moving, which is the one
+ * difference between the two modes that is meant to be visible.
+ *
+ * Generous on purpose: if the button ever exceeds the reserve the shift comes back,
+ * and 8px of slack is cheaper than that.
+ */
+.launch__foot {
+  font-size: 11.5px; color: var(--text-faint);
+  font-family: var(--font-num);
+  min-height: 40px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* --- persistent mode badge ------------------------------------------------ */
+
+.mode-badge {
+  position: fixed; top: 12px; left: 12px; z-index: 40;
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 13px 7px 10px;
+  font-family: var(--font-num); font-size: 11.5px; font-weight: 700;
+  letter-spacing: 0.16em;
+  background: rgba(11, 15, 30, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  backdrop-filter: blur(8px);
+}
+/* The dot reports the keypad, in every input mode: green connected, grey not. The
+   keyboard is always available, so it needs no indicator of its own. */
+.mode-badge__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-faint); box-shadow: none;
+}
+.mode-badge[data-link="off"] .mode-badge__dot {
+  background: var(--text-faint); box-shadow: none;
+}
+.mode-badge[data-link="ok"] .mode-badge__dot {
+  background: var(--mint); box-shadow: 0 0 10px var(--mint);
+}
+
+/* A lost stream tints the whole badge, so the one thing on screen that reports the
+   device also reports its failure. There is no `warn` state: dropped events are a
+   link diagnostic and go to the terminal, not here. */
+/* Replaying a recording: violet, the same hue the self-test uses for "this is not
+   live play". Neither green nor grey would be true - no device was ever opened. */
+.mode-badge[data-link="replay"] {
+  color: var(--violet); border-color: rgba(139, 92, 255, 0.4);
+}
+.mode-badge[data-link="replay"] .mode-badge__dot {
+  background: var(--violet); box-shadow: 0 0 10px var(--violet);
+}
+.mode-badge[data-link="error"] {
+  color: var(--magenta); border-color: rgba(255, 46, 166, 0.4);
+}
+.mode-badge[data-link="error"] .mode-badge__dot {
+  background: var(--magenta); box-shadow: 0 0 10px var(--magenta);
+}
+
+/* --- home ----------------------------------------------------------------- */
+
+/* Deliberately the mode badge's twin in the opposite corner: same pill, same padding,
+   same numeric face, so the two read as a matched pair of persistent chrome rather
+   than as one piece of chrome and one stray button.
+ *
+ * Results screen only. During a run this corner has to stay clear of anything that
+ * would end the run on a stray click, and on the launch screen there is nowhere to
+ * go home to. Driven off body[data-screen] like the screens themselves, so its
+ * visibility cannot drift out of step with which screen is showing. */
+/* Both corner controls in one row, so adding the second could not put it on top of
+   the first. The row is fixed; the buttons inside it are not. */
+.corner-right {
+  position: fixed; top: 12px; right: 12px; z-index: 40;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.home-btn {
+  display: none;
+  align-items: center;
+  padding: 7px 15px;
+  font-family: var(--font-num); font-size: 11.5px; font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--text-dim);
+  background: rgba(11, 15, 30, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: color 160ms, border-color 160ms, transform 120ms var(--ease-snap);
+}
+body[data-screen="results"] .home-btn { display: inline-flex; }
+.home-btn:hover { color: var(--cyan); border-color: var(--cyan); transform: translateY(-1px); }
+.home-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+/* Icon-only, so its accessible name lives in aria-label rather than in the markup.
+   Same pill as its neighbours; the glyph is inline SVG because there are no external
+   assets on this page and a font emoji would render differently on every machine. */
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; padding: 0;
+  color: var(--text-dim);
+  background: rgba(11, 15, 30, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: color 160ms, border-color 160ms, transform 120ms var(--ease-snap);
+}
+.icon-btn:hover { color: var(--cyan); border-color: var(--cyan); transform: translateY(-1px); }
+.icon-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+/* Muted reads as off at a glance, not merely as a different icon. */
+.icon-btn[aria-pressed="false"] { color: var(--text-faint); }
+.icon-btn svg { width: 17px; height: 17px; display: block; }
+
+/* --- reduced motion ------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

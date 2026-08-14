@@ -1,0 +1,22 @@
+# GRID PULSE keypad - udev rule
+#
+# Grants the logged-in user access to the keypad's CDC device without adding them to
+# the dialout group, which is a broader change than this needs.
+#
+# Install:
+#     sudo cp docs/99-grid-pulse.rules /etc/udev/rules.d/
+#     sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# Then unplug and replug the board.
+#
+# 2E8A:000A is Raspberry Pi's vendor ID with the Pico SDK's stock CDC product ID.
+# See firmware/src/usb_descriptors.c.
+
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000a", \
+    MODE="0660", TAG+="uaccess", SYMLINK+="gridpulse"
+
+# A Pico in BOOTSEL mode enumerates as mass storage with a different product ID.
+# This entry is only so the board is not claimed by anything unexpected while being
+# flashed; ./run.sh --flash uses the mounted filesystem, not this device.
+SUBSYSTEM=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0003", \
+    MODE="0660", TAG+="uaccess"
